@@ -4,7 +4,7 @@ const sendMail = require("../utils/email");
 const { randomCounter } = require("../utils/common");
 const { emailHtml, basicColumns } = require("../constant");
 const connection = require("../utils/db");
-const { SignToken } = require("../utils/authentication");
+const { SignToken, ConfirmToken } = require("../utils/authentication");
 
 //注册
 userRouter.post("/register", async (req, res) => {
@@ -96,6 +96,33 @@ userRouter.post("/email", async (req, res) => {
       });
     }
   );
+});
+
+userRouter.get("/getUserInfo", async (req, res) => {
+  const token = req.headers.authorization;
+  const decode = ConfirmToken(token);
+  if (!decode) {
+    return res.send({
+      data: {},
+      status: 401,
+      message: "请先登录!",
+    });
+  }
+  const { username } = decode;
+  console.log(username);
+  const result = await connection(
+    `select * from users where email='${username}' or username='${username}'`
+  );
+  result[0].password = "******";
+  result[0].socket_id = "******";
+
+  return res.send({
+    data: {
+      userInfo: result[0],
+    },
+    status: 200,
+    message: "",
+  });
 });
 
 module.exports = userRouter;
