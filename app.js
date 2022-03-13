@@ -1,7 +1,9 @@
 const express = require("express");
 const app = express();
 const userRouter = require("./routes/user");
+const articleRouter = require("./routes/articles");
 const bodyParser = require("body-parser");
+const { ConfirmToken } = require("./utils/authentication");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 require("express-async-errors");
@@ -16,20 +18,25 @@ app.all("*", function (req, res, next) {
   //让options尝试请求快速结束
   else next();
 });
+const whiteList = ["/user/login", "/user/register", "/user/email"];
+app.use("/", (req, res, next) => {
+  if (whiteList.includes(req.path)) next();
+  else {
+    const token = req.headers.authorization;
+    const decode = ConfirmToken(token);
+    if (!decode) {
+      return res.send({
+        data: {},
+        status: 401,
+        message: "请先登录!",
+      });
+    } else next();
+  }
+});
 // TODO: 加一个参数转义
 app.use("/user", userRouter);
-app.use((err, _, res, next) => {
-  if (err) {
-    res.status(err.status || 500);
-    res.send({
-      code: 500,
-      data: err,
-      message: error.message,
-    });
-  }
+app.use("/article", articleRouter);
 
-  next(err);
-});
 app.listen(3001, () => {
   console.log("running on 3001");
 });

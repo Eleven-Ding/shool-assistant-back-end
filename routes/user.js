@@ -101,15 +101,7 @@ userRouter.post("/email", async (req, res) => {
 userRouter.get("/getUserInfo", async (req, res) => {
   const token = req.headers.authorization;
   const decode = ConfirmToken(token);
-  if (!decode) {
-    return res.send({
-      data: {},
-      status: 401,
-      message: "请先登录!",
-    });
-  }
   const { username } = decode;
-  console.log(username);
   const result = await connection(
     `select * from users where email='${username}' or username='${username}'`
   );
