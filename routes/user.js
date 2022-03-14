@@ -55,11 +55,13 @@ userRouter.post("/login", async (req, res) => {
   const result = await connection(
     `select * from users where username='${username}' or email='${username}' and password = '${password}'`
   );
+  result[0].password = "******";
   if (result.length) {
     const token = SignToken({
       username,
       time: Date.now(),
       tips: "你在瞎解析什么呢？",
+      userInfo: result[0],
     });
     return res.send({
       data: {
