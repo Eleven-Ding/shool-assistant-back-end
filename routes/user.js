@@ -101,6 +101,7 @@ userRouter.post("/email", async (req, res) => {
 });
 
 userRouter.get("/getUserInfo", async (req, res) => {
+  // console.log(req.socket.emit);
   const token = req.headers.authorization;
   const decode = ConfirmToken(token);
   const { username } = decode;
