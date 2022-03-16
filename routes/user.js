@@ -55,7 +55,7 @@ userRouter.post("/login", async (req, res) => {
   const result = await connection(
     `select * from users where username='${username}' or email='${username}' and password = '${password}'`
   );
-  result[0].password = "******";
+  // 进行soketId的变成
   if (result.length) {
     const token = SignToken({
       username,
@@ -120,4 +120,13 @@ userRouter.get("/getUserInfo", async (req, res) => {
   });
 });
 
+userRouter.get("/create_connect", (req, res) => {
+  //
+  const socketId = req.socket.id;
+  const token = req.headers.authorization;
+  const { username } = ConfirmToken(token);
+  const result = connection(`update users set soketId`);
+
+  return res.send({});
+});
 module.exports = userRouter;
