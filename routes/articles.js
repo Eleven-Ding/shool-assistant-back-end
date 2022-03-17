@@ -152,7 +152,7 @@ articleRouter.get("/get_article", async (req, res) => {
   );
   const item = result[0];
   const p = await connection(
-    `select avator,username,email,school_name from users where username='${item.userEmail}' or email='${item.userEmail}' `
+    `select avator,username,email,school_name,id from users where username='${item.userEmail}' or email='${item.userEmail}' `
   );
   item.avator = p[0].avator;
   item.username = p[0].username;
@@ -161,6 +161,7 @@ articleRouter.get("/get_article", async (req, res) => {
   item.createTime = dayjs(Number(item.createTime)).format(
     "YYYY-MM-DD HH:mm:ss"
   );
+  item.userId = p[0].id;
   return res.send({
     data: {
       result: result[0],

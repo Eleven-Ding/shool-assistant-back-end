@@ -66,6 +66,7 @@ userRouter.post("/login", async (req, res) => {
     return res.send({
       data: {
         token,
+        userId: result[0].id,
       },
       status: 200,
       message: "登录成功",

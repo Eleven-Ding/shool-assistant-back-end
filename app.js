@@ -4,28 +4,13 @@ const userRouter = require("./routes/user");
 const articleRouter = require("./routes/articles");
 const bodyParser = require("body-parser");
 const { ConfirmToken } = require("./utils/authentication");
+const connect = require("./utils/db");
 var server = require("http").createServer(app);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 require("express-async-errors");
 const io = require("socket.io")(server, {
   cors: true,
-});
-
-io.on("connection", function (socket) {
-  console.log("a user connected");
-
-  socket.on("disconnect", function () {
-    console.log("a user go out");
-  });
-
-  // io.to(socketId).emit("add",data)
-  socket.on("message", function (obj) {
-    //延迟3s返回信息给客户端
-    setTimeout(function () {
-      io.emit("message", obj);
-    }, 3000);
-  });
 });
 
 app.all("*", function (req, res, next) {
@@ -40,6 +25,37 @@ app.all("*", function (req, res, next) {
   else next();
 });
 const whiteList = ["/user/login", "/user/register", "/user/email"];
+io.on("connection", function (socket) {
+  // 在这里建立链接?
+  // console.log("a user connected");
+
+  socket.on("disconnect", function () {
+    console.log("a user go out");
+  });
+  socket.on("user_connect", async function (token) {
+    const decode = ConfirmToken(token);
+    const { id } = decode.userInfo;
+    await connect(`update users set socket_id='${socket.id}' where id=${id}`);
+    // 这里就不做token异常 链接失败处理了
+  });
+
+  // io.to(socketId).emit("add",data)
+  socket.on("message", async function (obj) {
+    const { from, to, type, message = "", urls = [] } = JSON.parse(obj);
+    await connect(
+      `insert into messages (from_id,to_id,type,message,urls) values (${from},${to},${type},'${message}','${urls.join(
+        ","
+      )}')`
+    );
+    // 查询to的socketId
+    const toUser = await connect(`select socket_id from users where id=${to}`);
+    console.log(toUser[0], to);
+    const toSoketId = toUser[0].socket_id;
+    // 推送数据过去
+    io.to(toSoketId).emit("getMessage", {});
+  });
+});
+
 app.use("/", (req, res, next) => {
   req.socket = io;
   if (whiteList.includes(req.path)) next();
@@ -55,6 +71,7 @@ app.use("/", (req, res, next) => {
     } else next();
   }
 });
+
 // TODO: 加一个参数转义
 app.use("/user", userRouter);
 app.use("/article", articleRouter);
