@@ -29,7 +29,7 @@ const whiteList = ["/user/login", "/user/register", "/user/email"];
 io.on("connection", function (socket) {
   // 在这里建立链接?
   // console.log("a user connected");
-
+  socket.emit("open");
   socket.on("disconnect", function () {
     // console.log("a user go out");
   });
@@ -77,6 +77,6 @@ app.use("/", (req, res, next) => {
 app.use("/user", userRouter);
 app.use("/article", articleRouter);
 app.use("/message", messageRouter);
-server.listen(3001, () => {
-  console.log("running on 3001");
+server.listen(9006, () => {
+  console.log("running on 9006");
 });
