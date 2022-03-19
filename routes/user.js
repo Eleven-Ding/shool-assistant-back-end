@@ -120,13 +120,32 @@ userRouter.get("/getUserInfo", async (req, res) => {
   });
 });
 
-userRouter.get("/create_connect", (req, res) => {
-  //
-  const socketId = req.socket.id;
+userRouter.post("/update_user", async (req, res) => {
   const token = req.headers.authorization;
-  const { username } = ConfirmToken(token);
-  const result = connection(`update users set soketId`);
-
-  return res.send({});
+  const decode = ConfirmToken(token);
+  const userInfo = decode.userInfo;
+  const { email: userEmail } = userInfo;
+  const { username, avator, email } = req.body;
+  if (email !== userEmail) {
+    return res.send({
+      data: {},
+      message: "身份不匹配",
+      status: 401,
+    });
+  }
+  await connection(
+    `update users set username='${username}', avator='${avator}' where email='${email}'`
+  );
+  decode.userInfo.username = username;
+  decode.username = username;
+  decode.userInfo.avator = avator;
+  const token1 = SignToken(decode);
+  return res.send({
+    data: {
+      token: token1,
+    },
+    message: "修改成功",
+    status: 200,
+  });
 });
 module.exports = userRouter;
