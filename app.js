@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const userRouter = require("./routes/user");
 const articleRouter = require("./routes/articles");
+const messageRouter = require("./routes/message");
 const bodyParser = require("body-parser");
 const { ConfirmToken } = require("./utils/authentication");
 const connect = require("./utils/db");
@@ -30,13 +31,14 @@ io.on("connection", function (socket) {
   // console.log("a user connected");
 
   socket.on("disconnect", function () {
-    console.log("a user go out");
+    // console.log("a user go out");
   });
   socket.on("user_connect", async function (token) {
     const decode = ConfirmToken(token);
     const { id } = decode.userInfo;
     await connect(`update users set socket_id='${socket.id}' where id=${id}`);
     // 这里就不做token异常 链接失败处理了
+    // 可以在这里把全部的message数据推送回去
   });
 
   // io.to(socketId).emit("add",data)
@@ -49,10 +51,9 @@ io.on("connection", function (socket) {
     );
     // 查询to的socketId
     const toUser = await connect(`select socket_id from users where id=${to}`);
-    console.log(toUser[0], to);
     const toSoketId = toUser[0].socket_id;
     // 推送数据过去
-    io.to(toSoketId).emit("getMessage", {});
+    io.to(toSoketId).emit("getMessage");
   });
 });
 
@@ -75,7 +76,7 @@ app.use("/", (req, res, next) => {
 // TODO: 加一个参数转义
 app.use("/user", userRouter);
 app.use("/article", articleRouter);
-
+app.use("/message", messageRouter);
 server.listen(3001, () => {
   console.log("running on 3001");
 });

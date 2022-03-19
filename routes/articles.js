@@ -8,7 +8,6 @@ const dayjs = require("dayjs");
 
 articleRouter.post("/add_article", async (req, res) => {
   const { tag = "", content = "", urls = [], position = "中国" } = req.body;
-  console.log(position);
   const token = req.headers.authorization;
   const { username } = ConfirmToken(token);
   try {
@@ -23,7 +22,6 @@ articleRouter.post("/add_article", async (req, res) => {
       message: "发布成功",
     });
   } catch (err) {
-    console.log(err);
     return res.send({
       data: { err },
       status: 500,
