@@ -5,7 +5,7 @@ const { randomCounter } = require("../utils/common");
 const { emailHtml, basicColumns } = require("../constant");
 const connection = require("../utils/db");
 const { SignToken, ConfirmToken } = require("../utils/authentication");
-
+const dayjs = require("dayjs");
 //注册
 userRouter.post("/register", async (req, res) => {
   const { email, code, username, password, school } = req.body;
@@ -18,13 +18,13 @@ userRouter.post("/register", async (req, res) => {
   if (result.length > 0) {
     //查询该邮箱是否注册过了
     const registed = await connection(
-      `select * from users where email='${email}'`
+      `select * from users where email='${email}' or username='${username}'`
     );
     if (registed.length > 0) {
       return res.send({
         data: {},
         status: 401,
-        message: "您已经注册过了!",
+        message: "邮箱或者用户名已被使用!",
       });
     }
     await connection(
@@ -104,22 +104,128 @@ userRouter.post("/email", async (req, res) => {
 userRouter.get("/getUserInfo", async (req, res) => {
   const token = req.headers.authorization;
   const decode = ConfirmToken(token);
-  const { username } = decode;
+  const {
+    username,
+    userInfo: { id },
+  } = decode;
   const result = await connection(
     `select * from users where email='${username}' or username='${username}'`
   );
   result[0].password = "******";
   result[0].socket_id = "******";
 
+  const articles = await connection(
+    `select * from articles where userEmail='${username}'`
+  );
+  for (let i = 0; i < articles.length; i++) {
+    articles[i].createTime = dayjs(Number(articles[i].createTime)).format(
+      "YYYY-MM-DD HH:mm:ss"
+    );
+    const { userEmail } = articles[i];
+    // const [userInfo] = await connection(
+    //   `select avator,username,id from users where username='${userEmail}' or email='${userEmail}'`
+    // );
+    // articles[i].userInfo = userInfo;
+  }
+  let ids = [];
+  let browsers = [];
+  const browser = await connection(
+    `select * from browser where user_id=${result[0].id}`
+  );
+  for (let i = 0; i < browser.length; i++) {
+    const { article_id } = browser[i];
+    if (!ids.includes(article_id)) {
+      ids.push(article_id);
+      const [result] = await connection(
+        `select * from articles where article_id=${article_id}`
+      );
+      result.createTime = dayjs(Number(result.createTime)).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+      browsers.push(result);
+    }
+  }
+  const follow = await connection(`select * from follow where from_id=${id}`);
+  const befollow = await connection(`select * from follow where to_id=${id}`);
+  for (let i = 0; i < befollow.length; i++) {
+    const item = befollow[i];
+    const { from_id } = item;
+    const result = await connection(
+      `select avator,username,id from users where id=${from_id}`
+    );
+    item.userInfo = result[0];
+  }
+  for (let i = 0; i < follow.length; i++) {
+    const item = follow[i];
+    const { to_id } = item;
+    const result = await connection(
+      `select avator,username,id from users where id=${to_id}`
+    );
+    item.userInfo = result[0];
+  }
   return res.send({
     data: {
       userInfo: result[0],
+      articles,
+      browsers,
+      follow,
+      befollow,
     },
     status: 200,
     message: "",
   });
 });
 
+userRouter.get("/getOtherInfo", async (req, res) => {
+  const { id } = req.query;
+  const result = await connection(`select * from users where id=${id}`);
+  result[0].password = "******";
+  result[0].socket_id = "******";
+  const { username } = result[0];
+  const articles = await connection(
+    `select * from articles where userEmail='${username}'`
+  );
+  for (let i = 0; i < articles.length; i++) {
+    articles[i].createTime = dayjs(Number(articles[i].createTime)).format(
+      "YYYY-MM-DD HH:mm:ss"
+    );
+    const { userEmail } = articles[i];
+    const [userInfo] = await connection(
+      `select avator,username,id from users where username='${userEmail}' or email='${userEmail}'`
+    );
+    articles[i].userInfo = userInfo;
+  }
+  // 获取浏览记录
+  let ids = [];
+  let browsers = [];
+  const browser = await connection(`select * from browser where user_id=${id}`);
+  for (let i = 0; i < browser.length; i++) {
+    const { article_id } = browser[i];
+    if (!ids.includes(article_id)) {
+      ids.push(article_id);
+      const [result] = await connection(
+        `select * from articles where article_id=${article_id}`
+      );
+      result.createTime = dayjs(Number(result.createTime)).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+      browsers.push(result);
+    }
+  }
+  const follow = await connection(`select * from follow where from_id=${id}`);
+  const befollow = await connection(`select * from follow where to_id=${id}`);
+  return res.send({
+    data: {
+      userInfo: result[0],
+      articles,
+      browsers,
+      follow,
+      befollow,
+    },
+    status: 200,
+    message: "",
+  });
+});
 userRouter.post("/update_user", async (req, res) => {
   const token = req.headers.authorization;
   const decode = ConfirmToken(token);
@@ -145,6 +251,29 @@ userRouter.post("/update_user", async (req, res) => {
       token: token1,
     },
     message: "修改成功",
+    status: 200,
+  });
+});
+
+userRouter.post("/add_follow", async (req, res) => {
+  const { userId } = req.body;
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const result = await connection(
+    `select * from follow where from_id=${id} and to_id=${userId}`
+  );
+  if (result.length) {
+    return res.send({
+      data: {},
+      message: "您已经关注过了",
+      status: 201,
+    });
+  }
+  await connection(`insert into follow(from_id,to_id)values(${id},${userId})`);
+  return res.send({
+    data: {},
+    message: "关注成功",
     status: 200,
   });
 });

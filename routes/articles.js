@@ -168,4 +168,18 @@ articleRouter.get("/get_article", async (req, res) => {
     message: "",
   });
 });
+articleRouter.post("/add_browser", async (req, res) => {
+  const { article_id } = req.body;
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  await connection(
+    `insert into browser(article_id,user_id)values(${article_id},${id})`
+  );
+  return res.send({
+    data: {},
+    message: "",
+    status: 200,
+  });
+});
 module.exports = articleRouter;
