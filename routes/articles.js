@@ -148,6 +148,15 @@ articleRouter.get("/get_article", async (req, res) => {
   const result = await connection(
     `select * from articles where article_id=${article_id}`
   );
+  if (!result[0]) {
+    return res.send({
+      data: {
+        result: {},
+      },
+      status: 401,
+      message: "",
+    });
+  }
   const item = result[0];
   const p = await connection(
     `select avator,username,email,school_name,id from users where username='${item.userEmail}' or email='${item.userEmail}' `
@@ -180,6 +189,32 @@ articleRouter.post("/add_browser", async (req, res) => {
     data: {},
     message: "",
     status: 200,
+  });
+});
+articleRouter.post("/delete_article", async (req, res) => {
+  const { article_id } = req.body;
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const [{ username, email }] = await connection(
+    `select * from users where id=${id}`
+  );
+
+  const result = await connection(
+    `delete from articles where userEmail='${username}' and article_id=${article_id}`
+  );
+  console.log(result);
+  if (result.affectedRows) {
+    return res.send({
+      data: {},
+      message: "删除成功",
+      status: 200,
+    });
+  }
+  return res.send({
+    data: {},
+    message: "只能删除自己的",
+    status: 403,
   });
 });
 module.exports = articleRouter;

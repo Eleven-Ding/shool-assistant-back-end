@@ -139,10 +139,12 @@ userRouter.get("/getUserInfo", async (req, res) => {
       const [result] = await connection(
         `select * from articles where article_id=${article_id}`
       );
-      result.createTime = dayjs(Number(result.createTime)).format(
-        "YYYY-MM-DD HH:mm:ss"
-      );
-      browsers.push(result);
+      if (result) {
+        result.createTime = dayjs(Number(result.createTime)).format(
+          "YYYY-MM-DD HH:mm:ss"
+        );
+        browsers.push(result);
+      }
     }
   }
   const follow = await connection(`select * from follow where from_id=${id}`);
