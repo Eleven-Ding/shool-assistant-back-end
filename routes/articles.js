@@ -9,12 +9,14 @@ const dayjs = require("dayjs");
 articleRouter.post("/add_article", async (req, res) => {
   const { tag = "", content = "", urls = [], position = "中国" } = req.body;
   const token = req.headers.authorization;
-  const { username } = ConfirmToken(token);
+  const {
+    userInfo: { email },
+  } = ConfirmToken(token);
   try {
     const result = await connection(
       `insert into articles (content,urls,position,tag,userEmail,createTime)values('${content}','${urls.toString()}','${
         position || ""
-      }','${tag}','${username}','${Date.now()}')`
+      }','${tag}','${email}','${Date.now()}')`
     );
     return res.send({
       data: { result },
@@ -42,7 +44,7 @@ articleRouter.get("/get_articles", async (req, res) => {
   for (let i = 0; i < result.length; i++) {
     const item = result[i];
     const p = await connection(
-      `select avator,username,email,school_name from users where username='${item.userEmail}' or email='${item.userEmail}' `
+      `select avator,username,email,school_name from users where  email='${item.userEmail}' `
     );
     item.avator = p[0].avator;
     item.username = p[0].username;
@@ -159,7 +161,7 @@ articleRouter.get("/get_article", async (req, res) => {
   }
   const item = result[0];
   const p = await connection(
-    `select avator,username,email,school_name,id from users where username='${item.userEmail}' or email='${item.userEmail}' `
+    `select avator,username,email,school_name,id from users  where email='${item.userEmail}' `
   );
   item.avator = p[0].avator;
   item.username = p[0].username;
@@ -201,7 +203,7 @@ articleRouter.post("/delete_article", async (req, res) => {
   );
 
   const result = await connection(
-    `delete from articles where userEmail='${username}' and article_id=${article_id}`
+    `delete from articles where userEmail='${email}' and article_id=${article_id}`
   );
   console.log(result);
   if (result.affectedRows) {

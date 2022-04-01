@@ -58,7 +58,8 @@ userRouter.post("/login", async (req, res) => {
   // 进行soketId的变成
   if (result.length) {
     const token = SignToken({
-      username,
+      username: result[0].username,
+      email: result[0].email,
       time: Date.now(),
       tips: "你在瞎解析什么呢？",
       userInfo: result[0],
@@ -105,17 +106,14 @@ userRouter.get("/getUserInfo", async (req, res) => {
   const token = req.headers.authorization;
   const decode = ConfirmToken(token);
   const {
-    username,
-    userInfo: { id },
+    userInfo: { id, email },
   } = decode;
-  const result = await connection(
-    `select * from users where email='${username}' or username='${username}'`
-  );
+  const result = await connection(`select * from users where id=${id}`);
   result[0].password = "******";
   result[0].socket_id = "******";
 
   const articles = await connection(
-    `select * from articles where userEmail='${username}'`
+    `select * from articles where userEmail='${email}'`
   );
   for (let i = 0; i < articles.length; i++) {
     articles[i].createTime = dayjs(Number(articles[i].createTime)).format(
@@ -183,9 +181,9 @@ userRouter.get("/getOtherInfo", async (req, res) => {
   const result = await connection(`select * from users where id=${id}`);
   result[0].password = "******";
   result[0].socket_id = "******";
-  const { username } = result[0];
+  const { email } = result[0];
   const articles = await connection(
-    `select * from articles where userEmail='${username}'`
+    `select * from articles where userEmail='${email}'`
   );
   for (let i = 0; i < articles.length; i++) {
     articles[i].createTime = dayjs(Number(articles[i].createTime)).format(
@@ -193,7 +191,7 @@ userRouter.get("/getOtherInfo", async (req, res) => {
     );
     const { userEmail } = articles[i];
     const [userInfo] = await connection(
-      `select avator,username,id from users where username='${userEmail}' or email='${userEmail}'`
+      `select avator,username,id from users where  email='${userEmail}'`
     );
     articles[i].userInfo = userInfo;
   }
@@ -208,10 +206,12 @@ userRouter.get("/getOtherInfo", async (req, res) => {
       const [result] = await connection(
         `select * from articles where article_id=${article_id}`
       );
-      result.createTime = dayjs(Number(result.createTime)).format(
-        "YYYY-MM-DD HH:mm:ss"
-      );
-      browsers.push(result);
+      if (result) {
+        result.createTime = dayjs(Number(result.createTime)).format(
+          "YYYY-MM-DD HH:mm:ss"
+        );
+        browsers.push(result);
+      }
     }
   }
   const follow = await connection(`select * from follow where from_id=${id}`);
