@@ -68,6 +68,9 @@ userRouter.post("/login", async (req, res) => {
       data: {
         token,
         userId: result[0].id,
+        username: result[0].username,
+        email: result[0].email,
+        role: result[0].admin,
       },
       status: 200,
       message: "登录成功",
@@ -277,6 +280,86 @@ userRouter.post("/add_follow", async (req, res) => {
     data: {},
     message: "关注成功",
     status: 200,
+  });
+});
+
+userRouter.get("/get_all_user", async (req, res) => {
+  const { userId } = req.query;
+  // 查询全部
+  if (!userId) {
+    const result = await connection(`select * from users `);
+    for (const user of result) {
+      user.password = "******";
+    }
+    return res.send({
+      data: {
+        userInfo: result,
+        message: "查询成功",
+        status: 200,
+      },
+    });
+  } else {
+    const result = await connection(`select * from users where userId=${id}`);
+    result[0].password = "******";
+    return res.send({
+      data: {
+        userInfo: result,
+        message: "查询成功",
+        status: 200,
+      },
+    });
+  }
+  // 查询某个人
+});
+
+userRouter.post("/update_user1", async (req, res) => {
+  const { username, school_name, email, userId, password } = req.body;
+  const result = await connection(
+    `update  users set username='${username}',school_name='${school_name}',email='${email}' where id=${userId}`
+  );
+  return res.send({
+    data: {
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+userRouter.post("/update_role", async (req, res) => {
+  const { admin, userId } = req.body;
+  const result = await connection(
+    `update  users set admin=${admin} where id=${userId}`
+  );
+  return res.send({
+    data: {
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+userRouter.post("/delete_tag", async (req, res) => {
+  const { article_id } = req.body;
+  const result = await connection(
+    `delete from articles where article_id=${article_id}`
+  );
+  return res.send({
+    data: {
+      result,
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+userRouter.post("/edit_article", async (req, res) => {
+  const { article_id, content } = req.body;
+  const result = await connection(
+    `update  articles set content='${content}' where article_id=${article_id}`
+  );
+  return res.send({
+    data: {
+      result,
+      message: "查询成功",
+      status: 200,
+    },
   });
 });
 module.exports = userRouter;

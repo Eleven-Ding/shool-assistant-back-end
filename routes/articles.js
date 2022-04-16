@@ -219,4 +219,44 @@ articleRouter.post("/delete_article", async (req, res) => {
     status: 403,
   });
 });
+
+articleRouter.get("/get_all_artile", async (req, res) => {
+  const result = await connection(`select * from articles`);
+  return res.send({
+    data: {
+      articles: result,
+      message: "获取成功",
+      status: 200,
+    },
+  });
+});
+articleRouter.get("/get_all_comment", async (req, res) => {
+  const result = await connection(`select * from comment`);
+  for (let i = 0; i < result.length; i++) {
+    const item = result[i];
+    const p = await connection(`select * from users where id=${item.user_id}`);
+    item.userInfo = p[0];
+    item.userInfo.password = "******";
+    item.create_time = dayjs(Number(item.create_time)).format(
+      "YYYY-MM-DD HH:mm:ss"
+    );
+  }
+
+  return res.send({
+    data: {
+      comments: result,
+    },
+    status: 200,
+    message: "",
+  });
+});
+
+articleRouter.post("/delete_comment", async (req, res) => {
+  const { comment_id } = req.body;
+  const result = await connection(
+    `delete from comment where comment_id=${comment_id}`
+  );
+  return res.send({ data: {}, message: "", status: 200 });
+});
+
 module.exports = articleRouter;
