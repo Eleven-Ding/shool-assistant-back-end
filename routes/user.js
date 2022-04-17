@@ -362,4 +362,51 @@ userRouter.post("/edit_article", async (req, res) => {
     },
   });
 });
+userRouter.get("/get_todo_list", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const result = await connection(`select * from todo where userId=${id}`);
+  return res.send({
+    data: {
+      todos: result,
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+
+userRouter.post("/add_todo_list", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const { time, content } = req.body;
+  const result = await connection(
+    `insert into todo(content,endTime,userId)values('${content}','${time}',${id})`
+  );
+  return res.send({
+    data: {
+      result,
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+userRouter.post("/delete_todo", async (req, res) => {
+  const { id: todoId } = req.body;
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+
+  const result = await connection(
+    `delete from todo where id=${todoId} and userId=${id}`
+  );
+  return res.send({
+    data: {
+      result,
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
 module.exports = userRouter;
