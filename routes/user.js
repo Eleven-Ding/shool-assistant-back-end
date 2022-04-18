@@ -1,11 +1,14 @@
 const express = require("express");
 const userRouter = express.Router();
+const https = require("https");
 const sendMail = require("../utils/email");
 const { randomCounter } = require("../utils/common");
 const { emailHtml, basicColumns } = require("../constant");
 const connection = require("../utils/db");
 const { SignToken, ConfirmToken } = require("../utils/authentication");
 const dayjs = require("dayjs");
+const cheerio = require("cheerio");
+const axios = require("axios");
 //注册
 userRouter.post("/register", async (req, res) => {
   const { email, code, username, password, school } = req.body;
@@ -407,6 +410,68 @@ userRouter.post("/delete_todo", async (req, res) => {
       message: "查询成功",
       status: 200,
     },
+  });
+});
+//  聊天记录
+//  关注者
+// 评论
+// 浏览记录
+// 帖子数
+// todo数量
+userRouter.get("/get_admin_info", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const result = await connection(`select * from todo where userId=${id}`);
+  return res.send({
+    data: {
+      todos: result,
+      message: "查询成功",
+      status: 200,
+    },
+  });
+});
+
+userRouter.post("/add_target", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+
+  const { title, url, tag } = req.body;
+  console.log(url);
+  if (!title || !url) {
+    return res.send({
+      data: {},
+      status: 200,
+      message: "",
+    });
+  }
+  const result = await connection(
+    `insert into navigation(userId,url,tag,title)values(${id},'${url}','${tag}','${title}')`
+  );
+  return res.send({
+    data: {
+      result,
+    },
+    status: 200,
+    message: "",
+  });
+});
+
+userRouter.get("/get_target", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+
+  const result = await connection(
+    `select * from navigation where userId=${id}`
+  );
+  return res.send({
+    data: {
+      list: result,
+    },
+    status: 200,
+    message: "",
   });
 });
 module.exports = userRouter;
