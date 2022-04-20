@@ -488,4 +488,20 @@ userRouter.get("/get_role", async (req, res) => {
   });
 });
 
+userRouter.post("/delete_target", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+  const { id: target_id } = req.body;
+  const result = await connection(
+    `delete from navigation where id=${target_id} and userId=${id}`
+  );
+  return res.send({
+    data: {
+      list: result,
+    },
+    status: 200,
+    message: "",
+  });
+});
 module.exports = userRouter;

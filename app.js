@@ -68,7 +68,7 @@ app.get("/test", async (req, res) => {
 
   return res.send({
     data: {
-      html,
+      title: html.replace(/<[^>]+>/gi, ""),
     },
     status: 200,
     message: "",
