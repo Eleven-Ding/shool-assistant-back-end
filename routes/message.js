@@ -80,4 +80,57 @@ messageRouter.post("/update_message", async (req, res) => {
   });
 });
 
+messageRouter.get("/get_all_chat", async (req, res) => {
+  // 这个是返回所有的
+  let { limit, page, userId } = req.query;
+  page = (page - 1) * limit;
+  const sql1 =
+    userId !== ""
+      ? `select count(1) from messages where from_id=${userId} or to_id=${userId}`
+      : `select count(1) from messages`;
+  const p1 = connection(sql1);
+  const sql2 =
+    userId !== ""
+      ? `select * from messages where from_id=${userId} or to_id=${userId}  order by message_id desc  LIMIT ${parseInt(
+          page
+        )},${parseInt(limit)}`
+      : `select * from messages  order by message_id desc  LIMIT ${parseInt(
+          page
+        )},${parseInt(limit)}`;
+  const p2 = connection(sql2);
+  const result = await p2;
+  const totalCount = await p1;
+  const ids = {};
+  for (let i = 0; i < result.length; i++) {
+    const item = result[i];
+    item.createTime = dayjs(Number(item.createTime)).format(
+      "YYYY-MM-DD HH:mm:ss"
+    );
+    const { from_id, to_id } = item;
+    if (!ids[from_id]) {
+      const result = await connection(
+        `select avator,username from users where id=${from_id}`
+      );
+      ids[from_id] = result[0];
+    }
+    if (!ids[to_id]) {
+      const result = await connection(
+        `select avator,username from users where id=${to_id}`
+      );
+      ids[to_id] = result[0];
+    }
+  }
+  for (let i = 0; i < result.length; i++) {
+    const item = result[i];
+    item.formUser = ids[item.from_id];
+    item.fromUsername = ids[item.from_id].username;
+    item.fromAvator = ids[item.from_id].avator;
+    item.toUsername = ids[item.to_id].username;
+    item.toAvator = ids[item.to_id].avator;
+  }
+  return res.send({
+    list: result,
+    total: totalCount[0]["count(1)"],
+  });
+});
 module.exports = messageRouter;

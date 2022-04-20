@@ -6,6 +6,7 @@ const messageRouter = require("./routes/message");
 const bodyParser = require("body-parser");
 const { ConfirmToken } = require("./utils/authentication");
 const connect = require("./utils/db");
+const puppeteer = require("puppeteer");
 var server = require("http").createServer(app);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -13,6 +14,7 @@ require("express-async-errors");
 const io = require("socket.io")(server, {
   cors: true,
 });
+const axios = require("axios").default;
 
 app.all("*", function (req, res, next) {
   //设置允许跨域的域名，*代表允许任意域名跨域
@@ -54,6 +56,22 @@ io.on("connection", function (socket) {
     const toSoketId = toUser[0].socket_id;
     // 推送数据过去
     io.to(toSoketId).emit("getMessage");
+  });
+});
+app.get("/test", async (req, res) => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.goto("https://dingshiyi.top");
+  await page.screenshot({ path: "example.png" });
+  const html = await page.content();
+  await browser.close();
+
+  return res.send({
+    data: {
+      html,
+    },
+    status: 200,
+    message: "",
   });
 });
 

@@ -438,7 +438,6 @@ userRouter.post("/add_target", async (req, res) => {
   } = ConfirmToken(req.headers.authorization);
 
   const { title, url, tag } = req.body;
-  console.log(url);
   if (!title || !url) {
     return res.send({
       data: {},
@@ -474,4 +473,19 @@ userRouter.get("/get_target", async (req, res) => {
     message: "",
   });
 });
+userRouter.get("/get_role", async (req, res) => {
+  const {
+    userInfo: { id },
+  } = ConfirmToken(req.headers.authorization);
+
+  const result = await connection(`select admin from users where id=${id}`);
+  return res.send({
+    data: {
+      admin: result[0].admin,
+    },
+    status: 200,
+    message: "",
+  });
+});
+
 module.exports = userRouter;
